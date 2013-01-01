@@ -58,7 +58,7 @@
   g_print ("mygtkmenui - myGtkMenu improved\n" \
       "USAGE: %s [filename]\n" \
       "  if no `filename' given, read from stdin\n" \
-      "  see the attached menu_desc_file for syntax and semantics\n", \
+      "  see the attached menu description file for more info\n", \
       (app_name));
 
 /* prototypes */
