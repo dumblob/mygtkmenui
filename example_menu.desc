@@ -1,0 +1,85 @@
+# mygtkmenui description file
+#   7 keywords: menupos= item= cmd= icon= separator submenu= iconsize=
+#   each line in this file is limited to 200 characters
+#
+# `menupos' could be anywhere; can appear more than once (only the
+#   last one will be utilized)
+#   optional (if missing, the mouse coordinates are used, but without
+#     centering)
+#
+# `iconsize' could be anywhere, but the given iconsize will be applied
+#   only to items after the iconsize declaration; can appear more than
+#   once (=> one can have each menu item with different icon size :D)
+#   optional
+#
+# the triplet `item' `cmd' `icon' is non-separable; the order and the
+#   presence of each item is mandatory (none of them could be missing)
+#
+# keybindings are standard GTK (arrows, enter, space...) and h|o (left)
+#   n|u (right) c|. (up) t|e (down) [on the dvorak keyboard layout it builds
+#   sort of "arrow keys"-like layout for each of both hands] and qgG like
+#   in less(1)
+#
+# right after successfuly running/opening the menu, the middle item is
+#   selected
+
+# x y (px) offset of the center (both horiz + vert) of the menu
+# FIXME Xinerama/multimonitor_setup
+menupos = 840 525
+
+# scale icons (if any) to this rectangular size
+iconsize = 50
+
+# can contain GTK mnemonics (using _ `underscore')
+item = _Hello, try this
+# g_spawn_command_line_async() used for executing the command
+cmd =
+# path can be both absolute or relative; NULL denotes no icon
+icon = NULL
+
+separator
+
+item =  _mygtkmenui application
+cmd = true
+icon = icon/mygtkmenui.svg
+
+item = out. You           can
+cmd = false
+icon = ~/my_icons/false.png
+
+item = probably find this demo
+cmd = echo "Another 2"
+icon = /usr/share/icons/hicolor/128x128/apps/l3afpad.png
+
+# the content of submenu must be indented by <Tab> according to it's depth
+# first less-indented item jumps out of that menu
+submenu = configuration under
+	# submenu icon must be the first recognized command after `submenu'
+	icon = gnome-icons/access.png
+
+# useless empty lines
+
+	iconsize = 10  # just for fun :)
+
+	# notice the missing/residing spaces, which are ignored
+	item   =the following path:                                                                             
+	cmd= nautilus-super --no-desktop --browser # Not a standard program
+	icon=gnome-icons/folder.png
+
+item = /usr/share/doc/mygtkmenui/example_menu.desc
+cmd = true
+icon = icon/mygtkmenui.png
+
+item = or similar...
+cmd = true
+icon = ~/my_icons/clock.png
+
+item = Have a nice day!
+cmd = true
+icon = ~/my_icons/clock.png
+
+item = -- written on 2012-12-31 at 21:47 --
+cmd = true
+icon = ~/my_icons/clock.png
+
+# vim: set ft=make:
