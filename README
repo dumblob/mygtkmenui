@@ -1,5 +1,7 @@
 DESCRIPTION
-  see example_menu.desc and stdout/stderr output of the resulting binary
+  myGtkMenu improved - GTK2, GTK3 standalone menu written in C
+  for detailed information see example_menu.desc and stdout/stderr
+    output of the resulting binary
 
 BUILD & RUN
   make clean
