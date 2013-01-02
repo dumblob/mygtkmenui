@@ -1,0 +1,7 @@
+DESCRIPTION
+  see example_menu.desc and stdout/stderr output of the resulting binary
+
+BUILD & RUN
+  make clean
+  make
+  ./mygtkmenui example_menu.desc
