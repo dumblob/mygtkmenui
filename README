@@ -1,5 +1,5 @@
 DESCRIPTION
-  myGtkMenu improved - GTK2, GTK3 standalone menu written in C
+  myGtkMenu improved - GTK2, GTK3 standalone & lightweight menu written in C
   for detailed information see example_menu.desc and stdout/stderr
     output of the resulting binary
 
