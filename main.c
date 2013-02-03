@@ -176,6 +176,9 @@ int main (int argc, char *argv[]) {
   gtk_accelerator_parse ("n", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_CHILD);
+  gtk_accelerator_parse ("l", &key, &mod);
+  gtk_binding_entry_add_signal (binding_set, key, mod,
+      "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_CHILD);
 
   gtk_accelerator_parse ("g", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
