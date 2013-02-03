@@ -6,4 +6,4 @@ DESCRIPTION
 BUILD & RUN
   make clean
   make
-  ./mygtkmenui example_menu.desc
+  ./mygtkmenui -- ./example_menu.desc

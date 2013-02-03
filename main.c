@@ -56,10 +56,11 @@
 
 #define printHelpMsg(app_name) \
   g_print ("mygtkmenui - myGtkMenu improved\n" \
-      "USAGE: %s [filename]\n" \
-      "  if no `filename' given, read from stdin\n" \
+      "USAGE: %s -h\n" \
+      "       %s -- [filename]\n" \
+      "  if no `filename' is given, use stdin\n" \
       "  see the attached menu description file for more info\n", \
-      (app_name));
+      (app_name), (app_name));
 
 /* prototypes */
 int ReadLine ();
@@ -77,7 +78,6 @@ FILE *pFile;
 GtkWidget *menu[MAX_SUBMENU_DEPTH];
 
 int main (int argc, char *argv[]) {
-  char *Filename;
   int Mode;		// What kind of input are we looking for?
   int Kind;		// Type of input actually read
   int curDepth;	// Root menu is depth = 0
@@ -98,39 +98,40 @@ int main (int argc, char *argv[]) {
   // If this check causes you problems, comment it out.
   int i_already_running = already_running();
   if (i_already_running == 1) {
-    fprintf(stderr, "All ready running, will quit.\n");
+    fprintf(stderr, "Already running, will quit.\n");
     return EXIT_FAILURE;
   }
   else if (i_already_running == 2) {
-    fprintf(stderr, "%s: Error in routine already_running(), "
-        "will quit.\n", argv[0]);
+    fprintf (stderr, "%s: Error in routine already_running(), will quit.\n",
+        argv[0]);
     return EXIT_FAILURE;
   }
 
-  if (!gtk_init_check (&argc, &argv)) {
-    g_print("Error, cannot initialize gtk.\n");
-    exit (EXIT_FAILURE);
+  if ((argc == 2 || argc == 3) && ! strcmp(argv[1], "--")) {
+    if (argc == 3) {
+      printf ("Reading the file: %s\n", argv[2]);
+      pFile = fopen (argv[2], "r");
+    }
+    else {
+      printf ("Reading menu-description from stdin...\n");
+      pFile = stdin;
+    }
   }
-
-  if ((argc > 1) && (argv[1][0] == '-')) {
+  else {
     printHelpMsg(argv[0]);
-    exit (EXIT_SUCCESS);
-  }
-
-  if (argc < 2) {
-    g_print ("Reading menu-description from stdin...\n");
-    pFile = stdin;
-  }
-  else
-  {
-    Filename = (char *) argv[1];
-    g_print ("Reading the file: %s\n", Filename);
-    pFile = fopen (Filename, "r");
+    return EXIT_SUCCESS;
   }
 
   if (pFile == NULL) {
-    g_print ("Cannot open the file.\n");
-    exit (EXIT_FAILURE);
+    fprintf (stderr, "Cannot open the file.\n");
+    return EXIT_FAILURE;
+  }
+
+  // manipulates with the content of argc/argv (e.g. -- disappears both
+  //   from argc and argv)
+  if (!gtk_init_check (&argc, &argv)) {
+    g_print("Error, cannot initialize gtk.\n");
+    return EXIT_FAILURE;
   }
 
   menu[0] = gtk_menu_new ();
