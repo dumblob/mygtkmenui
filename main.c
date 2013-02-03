@@ -358,6 +358,11 @@ int main (int argc, char *argv[]) {
 
   fclose (pFile);
 
+  // keep user informed, the menu is empty
+  if (curItem == 0)
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu[0]),
+        gtk_image_menu_item_new_with_mnemonic ("<no content to display>"));
+
   gtk_widget_show_all (menu[0]);
   g_signal_connect_swapped (menu[0], "deactivate",
       G_CALLBACK (QuitMenu), NULL);
