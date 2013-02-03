@@ -176,8 +176,8 @@ int main (int argc, char *argv[]) {
   gtk_accelerator_parse ("n", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_CHILD);
-  gtk_accelerator_parse ("l", &key, &mod);
-  gtk_binding_entry_add_signal (binding_set, key, mod,
+  //gtk_accelerator_parse ("l", &key, &mod);  // why the hell does this not work?
+  gtk_binding_entry_add_signal (binding_set, GDK_KEY_l, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_CHILD);
 
   gtk_accelerator_parse ("g", &key, &mod);
@@ -470,6 +470,33 @@ static void QuitMenu (char *Msg) {
   gtk_main_quit ();
 }
 
+// return rest of the string after cut off using regexp |^pattern *= *|
+char *str_starts_with_pattern (char *str, char *pattern) {
+  for (;;) {
+    if (*str == '\0') return NULL;
+
+    // pattern matches
+    if (*pattern == '\0') {
+      for (; *str == ' '; ++str);
+
+      if (*str != '=') return NULL;
+
+      for (++str; *str == ' '; ++str);
+
+      // empty string (containing only '\0') allowed
+      return str;
+    }
+    // in the middle of pattern
+    else if (*str == *pattern) {
+      ++str;
+      ++pattern;
+    }
+    else {
+      return NULL;
+    }
+  }
+}
+
 /* return kind of line, menu depth, and stripped text */
 int ReadLine () {
   // return(-1) = Error, return(0) = EOF, return(>0) = keyword
@@ -539,50 +566,32 @@ int ReadLine () {
     return 5;
   }
   else {
-    /* its a bad line */
-    if ((str2 = strchr (tmp, '=')) == NULL) {
-      strcpy (data, tmp);
-      return (-1);
-    }
-
-    *str2 = '\0';
-
-#define STR_STARTS_WITH_PATTERN(str, pattern, n, term_char_ptr) \
-      /* first N characters must match; the rest must be spaces */ \
-      (! strncmp ((str), (pattern), (n)) && \
-       strspn((str) + (n), " ") == (term_char_ptr) - ((str) + (n)))
-
-    if      (STR_STARTS_WITH_PATTERN (tmp, "cmd", 3, str2)) {
+    if      ((str2 = str_starts_with_pattern (tmp, "cmd"     )) != NULL) {
       Kind = 2;
     }
-    else if (STR_STARTS_WITH_PATTERN (tmp, "item", 4, str2)) {
+    else if ((str2 = str_starts_with_pattern (tmp, "item"    )) != NULL) {
       Kind = 1;
     }
-    else if (STR_STARTS_WITH_PATTERN (tmp, "icon", 4, str2)) {
+    else if ((str2 = str_starts_with_pattern (tmp, "icon"    )) != NULL) {
       Kind = 3;
     }
-    else if (STR_STARTS_WITH_PATTERN (tmp, "submenu", 7, str2)) {
+    else if ((str2 = str_starts_with_pattern (tmp, "submenu" )) != NULL) {
       Kind = 4;
     }
-    else if (STR_STARTS_WITH_PATTERN (tmp, "menupos", 7, str2)) {
+    else if ((str2 = str_starts_with_pattern (tmp, "menupos" )) != NULL) {
       Kind = 7;
     }
-    else if (STR_STARTS_WITH_PATTERN (tmp, "iconsize", 8, str2)) {
+    else if ((str2 = str_starts_with_pattern (tmp, "iconsize")) != NULL) {
       Kind = 6;
     }
     /* its a bad line */
     else {
-      strcpy (data, tmp);
-      return -1;
+      str2 = tmp;
+      Kind = -1;
     }
 
-    // Remove keywords and white space
-    str2++;
-    while ((*str2 == ' ') || (*str2 == '\t'))
-      str2++;
     strcpy (data, str2);
-
-    return (Kind);
+    return Kind;
   }
 }
 
