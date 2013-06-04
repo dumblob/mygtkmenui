@@ -23,8 +23,12 @@
 
 //FIXME dumblob's long term wishlist
 //  search (case-insensitive + partial token match) using /
-//  position submenus such that the middle item is right next to
-//    currently selected item in the parent menu
+//  position submenus such that
+//    the middle item is right next to currently selected item in
+//      the parent menu
+//    OR
+//    the first non-submenu item gets selected (if none, select
+//      first submenu item)
 //  possibility to change font from the menuDescFile?
 //  disable selection cycling when entering the first/last item
 //  icon upscaling (only downscaling is currently implemented)
