@@ -27,6 +27,7 @@
 //    currently selected item in the parent menu
 //  possibility to change font from the menuDescFile?
 //  disable selection cycling when entering the first/last item
+//  icon upscaling (only downscaling is currently implemented)
 
 #include <stdio.h>
 #include <gtk/gtk.h>

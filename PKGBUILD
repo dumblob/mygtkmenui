@@ -1,54 +1,35 @@
 # Maintainer: Jan Pacner <dumblob@gmail.com>
 
-pkgname=mygtkmenui-git
-_pkgname=mygtkmenui
-pkgver=20130101
+_basename=mygtkmenui
+pkgname=${_basename}-git
+pkgver=15.6c0a589
 pkgrel=1
 pkgdesc="myGtkMenu improved; GTK2, GTK3 standalone & lightweight menu written in C"
 arch=('i686' 'x86_64')
-url="https://github.com/dumblob/$_pkgname"
+url="https://github.com/dumblob/$_basename"
 license=('GPL')
+source=("$_basename::git+https://github.com/dumblob/mygtkmenui")
+sha256sums=('SKIP')
 depends=('gtk3')
 #depends=('gtk2>=2.4')
-#md5sums=('??????????????')
-
-_gitroot="https://github.com/dumblob/${_pkgname}.git"
-_gitname=$_pkgname
 
 build() {
-  cd "$srcdir"
-  msg "Connecting to GIT server...."
-
-  if [ -d $_gitname ] ; then
-    cd $_gitname && git pull origin
-    msg "The local files are updated."
-  else
-    git clone $_gitroot
-  fi
-
-  msg "GIT checkout done or server timeout"
-
-  #FIXME
-  #rm -rf "$srcdir/$_gitname-build"
-  #git clone "$srcdir/$_gitname" "$srcdir/$_gitname-build"
-  #cd "$srcdir/$_gitname-build"
-
-  cd $srcdir/$_gitname
+  cd "$_basename"
   msg "Starting make..."
-  make clean
-  make
+  make  # GTK3 by default
+  #make GTK=`pkg-config --cflags --libs gtk+-2.0`  # GTK2
+}
+
+pkgver() {
+  cd "$_basename"
+  echo "$(git rev-list --count HEAD).$(git rev-parse --short HEAD)"
 }
 
 package() {
-  cd "$srcdir/$_gitname"
-  install -D -m755 $_pkgname $pkgdir/usr/bin/$_pkgname
-
-  _example=example_menu.desc
-  install -D -m644 $_example $pkgdir/usr/share/doc/$_pkgname/$_example
-
-  _desktop=${_pkgname}.desktop
-  install -D -m644 $_desktop $pkgdir/usr/share/applications/$_desktop
-
-  install -D -m644 icon/${_pkgname}.svg $pkgdir/usr/share/pixmaps/${_pkgname}.svg
-  install -D -m644 icon/${_pkgname}.png $pkgdir/usr/share/pixmaps/${_pkgname}.png
+  cd "$_basename"
+  install -D -m755 "$_basename"            "$pkgdir/usr/bin/$_basename"
+  install -D -m644 "example_menu.desc"     "$pkgdir/usr/share/doc/$_basename/example_menu.desc"
+  install -D -m644 "${_basename}.desktop"  "$pkgdir/usr/share/applications/${_basename}.desktop"
+  install -D -m644 "icon/${_basename}.svg" "$pkgdir/usr/share/pixmaps/${_basename}.svg"
+  install -D -m644 "icon/${_basename}.png" "$pkgdir/usr/share/pixmaps/${_basename}.png"
 }
