@@ -32,10 +32,10 @@ iconsize = 50
 
 # can contain GTK mnemonics (using _ `underscore')
 item = _Hello, try this
-# g_spawn_command_line_async() used for executing the command
+# g_spawn_command_line_async() used for executing the command (no `exec' needed)
 cmd =
-# path can be both absolute or relative; NULL denotes no icon
-icon = NULL
+# path can be absolute, relative or completely empty
+icon =
 
 separator
 

@@ -206,10 +206,11 @@ int main (int argc, char *argv[]) {
   curItem = 0;
   Mode = 0;
   curDepth = 0;
-  while ((Kind = ReadLine()) != 0) {	// Read next line and get 'Kind'
-    // of keyword
-    if (Kind == -1)
+  while ((Kind = ReadLine()) != 0) {	// Read next line and get the keyword kind
+    if (Kind == -1) {
       Mode = -1;	// Error parsing file
+      fprintf(stderr, "Bad syntax \"%s\"\n", data);
+    }
 
     if (depth > curDepth) {
       g_print ("Keyword found at incorrect indentation.\n");
@@ -267,23 +268,26 @@ int main (int argc, char *argv[]) {
         g_signal_connect_swapped (menuItem, "activate",
             G_CALLBACK (RunItem), Cmd[curItem]);
         curItem++;
-        Mode = 0;
-        if (strncasecmp (data, "NULL", 4) == 0) break;	// No icon
-        // If data is a dir name, program will hang.
-        stat (data, &statbuf);
-        if (!S_ISREG (statbuf.st_mode)) {
-          g_print ("%d: Error, %s is not a icon file.\n", lineNum, data);
-          break;
-        }
-        Pixbuf = gdk_pixbuf_new_from_file_at_size (data, w, h, &error);
-        if (Pixbuf == NULL) {
-          g_print ("%d: %s\n", lineNum, error->message);
-          g_error_free (error);
-          error = NULL;
-        }
-        image = gtk_image_new_from_pixbuf (Pixbuf);
-        gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM
-            (menuItem), image);
+
+        #define ADD_MENU_ITEM(img) \
+          Mode = 0; \
+          if (data[0] == '\0') break; /* no icon */ \
+          /* If data is a dir name, program will hang. */ \
+          stat (data, &statbuf); \
+          if (! S_ISREG(statbuf.st_mode)) { \
+            g_print("%d: Error, %s is not a icon file.\n", lineNum, data); \
+            break; \
+          } \
+          Pixbuf = gdk_pixbuf_new_from_file_at_size(data, w, h, &error); \
+          if (Pixbuf == NULL) { \
+            g_print("%d: %s\n", lineNum, error->message); \
+            g_error_free(error); \
+            error = NULL; \
+          } \
+          image = gtk_image_new_from_pixbuf(Pixbuf); \
+          gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(img), image);
+
+        ADD_MENU_ITEM(menuItem)
         break;
       case 4:	// Start submenu
         if (curDepth >= MAX_SUBMENU_DEPTH) {
@@ -305,23 +309,7 @@ int main (int argc, char *argv[]) {
           Mode = -1;
           break;
         }
-        Mode = 0;
-        if (strncasecmp (data, "NULL", 4) == 0) break;	// No icon
-        // If data is a dir name, program will hang.
-        stat (data, &statbuf);
-        if (!S_ISREG (statbuf.st_mode)) {
-          g_print ("%d: Error, %s is not a icon file.\n", lineNum, data);
-          break;
-        }
-        Pixbuf = gdk_pixbuf_new_from_file_at_size (data, w, h, &error);
-        if (Pixbuf == NULL) {
-          g_print ("%d: %s\n", lineNum, error->message);
-          g_error_free (error);
-          error = NULL;
-        }
-        image = gtk_image_new_from_pixbuf (Pixbuf);
-        gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM
-            (SubmenuItem), image);
+        ADD_MENU_ITEM(SubmenuItem)
         break;
       case 6:	// Insert separator into menu
         menuItem = gtk_separator_menu_item_new ();
@@ -512,9 +500,9 @@ char *str_starts_with_pattern (char *str, char *pattern) {
 int ReadLine () {
   // return(-1) = Error, return(0) = EOF, return(>0) = keyword
   char *chop;
-  int i, len, count, Kind;
+  int i, len, Kind;
   char tmp[MAX_LINE_LENGTH];
-  char *str1, *str2;
+  char *str2;
 
   len = 0;
   while (len == 0) {
@@ -534,11 +522,11 @@ int ReadLine () {
     // Remove trailing spaces & CR/LF
     if (len > 0) {
       chop = &tmp[len - 1];
-      while ((chop >= tmp) && (isspace (*chop) != 0)) {
+      while ((chop >= tmp) && (isspace(*chop) != 0)) {
         *chop = '\0';
         chop--;
       }
-      len = strlen (tmp);
+      len = strlen(tmp);
     }
   };
 
@@ -550,60 +538,51 @@ int ReadLine () {
   }
 
   // Calculate menu depth
-  for (count = 0, i = 0; i < len; i++) {
-    if (tmp[i] == ' ')
-      count += 1;
-    else if (tmp[i] == '\t')	// Tab character = 4 spaces
-      count += 4;
+  for (depth = 0, i = 0; i < len; i++) {
+    if (tmp[i] == '\t')
+      depth++;
     else
       break;
-  };
-  depth = count / 4;
+  }
 
   // Remove leading white space
-  if (count > 0) {
-    str1 = tmp;
+  str2 = tmp;
+  while ((*str2 == ' ') || (*str2 == '\t')) {
+    str2++;
+    len--;
+  }
+  for (i = 0; i <= len; i++) tmp[i] = str2[i];
+
+  if (! strcmp(tmp, "separator")) {
     str2 = tmp;
-    while ((*str2 == ' ') || (*str2 == '\t')) {
-      str2++;
-      len--;
-    }
-    for (i = 0; i <= len; i++)
-      *str1++ = *str2++;
+    Kind = 5;
   }
-
-  if (! strcmp (tmp, "separator")) {
-    strcpy (data, tmp);
-    return 5;
+  else if ((str2 = str_starts_with_pattern (tmp, "cmd"     )) != NULL) {
+    Kind = 2;
   }
+  else if ((str2 = str_starts_with_pattern (tmp, "item"    )) != NULL) {
+    Kind = 1;
+  }
+  else if ((str2 = str_starts_with_pattern (tmp, "icon"    )) != NULL) {
+    Kind = 3;
+  }
+  else if ((str2 = str_starts_with_pattern (tmp, "submenu" )) != NULL) {
+    Kind = 4;
+  }
+  else if ((str2 = str_starts_with_pattern (tmp, "menupos" )) != NULL) {
+    Kind = 7;
+  }
+  else if ((str2 = str_starts_with_pattern (tmp, "iconsize")) != NULL) {
+    Kind = 6;
+  }
+  /* its a bad line */
   else {
-    if      ((str2 = str_starts_with_pattern (tmp, "cmd"     )) != NULL) {
-      Kind = 2;
-    }
-    else if ((str2 = str_starts_with_pattern (tmp, "item"    )) != NULL) {
-      Kind = 1;
-    }
-    else if ((str2 = str_starts_with_pattern (tmp, "icon"    )) != NULL) {
-      Kind = 3;
-    }
-    else if ((str2 = str_starts_with_pattern (tmp, "submenu" )) != NULL) {
-      Kind = 4;
-    }
-    else if ((str2 = str_starts_with_pattern (tmp, "menupos" )) != NULL) {
-      Kind = 7;
-    }
-    else if ((str2 = str_starts_with_pattern (tmp, "iconsize")) != NULL) {
-      Kind = 6;
-    }
-    /* its a bad line */
-    else {
-      str2 = tmp;
-      Kind = -1;
-    }
-
-    strcpy (data, str2);
-    return Kind;
+    str2 = tmp;
+    Kind = -1;
   }
+
+  strcpy (data, str2);
+  return Kind;
 }
 
 int already_running (void) {
