@@ -22,6 +22,7 @@
  */
 
 //FIXME dumblob's long term wishlist
+//  -q quiet flag (only errors would be shown)
 //  search (case-insensitive + partial token match) using /
 //  position submenus such that
 //    the middle item is right next to currently selected item in
@@ -49,11 +50,11 @@
 #define gtk_widget_get_visible(w) GTK_WIDGET_VISIBLE (w)
 #endif
 
-#define MAX_LINE_LENGTH 200
-#define MAX_MENU_ENTRIES 1000
+#define MAX_LINE_LENGTH 768
+#define MAX_MENU_ENTRIES 1024
 #define MAX_SUBMENU_DEPTH 4
-#define MAX_ICON_SIZE 200
-#define MIN_ICON_SIZE 10
+#define MAX_ICON_SIZE 256
+#define MIN_ICON_SIZE 8
 #define MAX_PATH_LEN 256
 /* only 1 instance allowed; 0 = No, 1 = Yes, 2 = Error */
 #define LOCK_NAME "mygtkmenui_lockfile"
