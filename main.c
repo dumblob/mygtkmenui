@@ -534,7 +534,7 @@ int ReadLine () {
   // Big error?
   if (len >= MAX_LINE_LENGTH) {
     strncpy (data, tmp, MAX_LINE_LENGTH);
-    data[MAX_LINE_LENGTH] = '\0';
+    data[MAX_LINE_LENGTH +1] = '\0';
     return (-1);
   }
 

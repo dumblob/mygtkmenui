@@ -1,4 +1,4 @@
-CC = gcc
+CC ?= gcc
 CFLAGS = -Wall -lm \
 	-DG_DISABLE_DEPRECATED \
 	-DGDK_DISABLE_DEPRECATED \
