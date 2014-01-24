@@ -2,7 +2,7 @@
  * mygtkmenui - read description file and generate menu
  *
  * Copyright (C) 2004-2011 John Vorthman
- *                    2012 Jan Pacner (dumblob@gmail.com)
+ *               2012-2014 Jan Pacner (dumblob@gmail.com)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License, version 2, as published
@@ -33,6 +33,8 @@
 //  possibility to change font from the menuDescFile?
 //  disable selection cycling when entering the first/last item
 //  icon upscaling (only downscaling is currently implemented)
+//  cache somehow the scaled icons (or defer the reading & scaling up
+//    to the first (sub)menu kickoff) for fast menu show-up
 
 #include <stdio.h>
 #include <gtk/gtk.h>
