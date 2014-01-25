@@ -536,7 +536,7 @@ int ReadLine () {
   // Big error?
   if (len >= MAX_LINE_LENGTH) {
     strncpy (data, tmp, MAX_LINE_LENGTH);
-    data[MAX_LINE_LENGTH +1] = '\0';
+    data[MAX_LINE_LENGTH - 1] = '\0';
     return (-1);
   }
 
@@ -593,29 +593,37 @@ int already_running (void) {
   int fd;
   char *home;
   int n;
-  int ret;
+  int ret = 2;
   char *Lock_path;
 
-  home = getenv(ENV_LOCK_FILE_PREFIX);
-  if (home == NULL) {
+  /* a buffer to hold the path name to our lock file */
+  if ((Lock_path = malloc(MAX_PATH_LEN + 1)) == NULL) {
     fprintf(stderr,
-        "Error, could not get env variable " ENV_LOCK_FILE_PREFIX "\n");
+        "Error, malloc failed");
     exit(1);
   }
 
-  Lock_path = malloc(MAX_PATH_LEN + 1);
-  n = snprintf(Lock_path, MAX_PATH_LEN, "%s/%s", home, LOCK_NAME);
+  /* we need to place the lock file in ENV_LOCK_FILE_PREFIX if it is set,
+     else in ~/.cache */
+  if ((home = getenv(ENV_LOCK_FILE_PREFIX)) != NULL) {
+    n = snprintf(Lock_path, MAX_PATH_LEN, "%s/%s", home, LOCK_NAME);
+  } else if ((home = getenv("HOME")) != NULL) {
+    /* try for ~/.cache instead */
+    n = snprintf(Lock_path, MAX_PATH_LEN, "%s/.cache/%s", home, LOCK_NAME);
+  } else {
+    fprintf(stderr,
+        "Error, could not get env variables " ENV_LOCK_FILE_PREFIX " or HOME\n");
+    goto Done;
+  }
 
   if (n > MAX_PATH_LEN || Lock_path == NULL) {
     fprintf(stderr, "Error, path name too long: %s.\n", Lock_path);
-    ret = 2;
     goto Done;
   }
 
   fd = open(Lock_path, O_RDWR | O_CREAT, 0600);
   if (fd < 0) {
     fprintf(stderr, "Error opening %s.\n", Lock_path);
-    ret = 2;
     goto Done;
   }
 
