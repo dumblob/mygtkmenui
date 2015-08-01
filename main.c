@@ -4,6 +4,9 @@
  * Copyright (C) 2004-2011 John Vorthman
  *               2012-2014 Jan Pacner (dumblob@gmail.com)
  *
+ * gcc -o mygtkmenui `pkg-config --cflags --libs gtk+-3.0` main.c
+ *                                               gtk+-2.0
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License, version 2, as published
  * by the Free Software Foundation.
@@ -16,13 +19,10 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc., 59
  * Temple Place, Suite 330, Boston, MA 02111-1307 USA
- *
- * gcc -o mygtkmenui `pkg-config --cflags --libs gtk+-3.0` main.c
- *                                               gtk+-2.0
  */
 
 //FIXME dumblob's long term wishlist
-//  -q quiet flag (only errors would be shown)
+//  add -d debug flag (all the current messages should go there)
 //  search (case-insensitive + partial token match) using /
 //  position submenus such that
 //    the middle item is right next to currently selected item in
@@ -54,11 +54,10 @@
 
 #define MAX_LINE_LENGTH 768
 #define MAX_MENU_ENTRIES 1024
-#define MAX_SUBMENU_DEPTH 4
+#define MAX_SUBMENU_DEPTH 8
 #define MAX_ICON_SIZE 256
 #define MIN_ICON_SIZE 8
 #define MAX_PATH_LEN 256
-/* only 1 instance allowed; 0 = No, 1 = Yes, 2 = Error */
 #define LOCK_NAME "mygtkmenui_lockfile"
 #define ENV_LOCK_FILE_PREFIX "XDG_CACHE_HOME"
 
@@ -71,7 +70,7 @@
       (app_name), (app_name));
 
 /* prototypes */
-int ReadLine ();
+int ReadLine();
 static void RunItem (char *);
 static void QuitMenu (char *);
 gboolean Get2Numbers (char *);
@@ -89,7 +88,7 @@ int main (int argc, char *argv[]) {
   int Mode;		// What kind of input are we looking for?
   int Kind;		// Type of input actually read
   int curDepth;	// Root menu is depth = 0
-  int curItem;	// Count number of menu entries
+  int curItem;	// number of menu entries
   gint w, h;		// Size of menu icon
   gboolean bSetMenuPos = FALSE;
   int i;
@@ -100,10 +99,8 @@ int main (int argc, char *argv[]) {
   GError *error = NULL;
   struct stat statbuf;
 
-  // Some hot keys (keybindings) get carried away and start
-  // many instances. Will try to use a lock file so that
-  // only one instance of this program runs at a given time.
-  // If this check causes you problems, comment it out.
+  // some hot keys (keybindings) get carried away and start
+  // many instances => use a lock file
   int i_already_running = already_running();
   if (i_already_running == 1) {
     fprintf(stderr, "Already running, will quit.\n");
@@ -137,71 +134,71 @@ int main (int argc, char *argv[]) {
 
   // manipulates with the content of argc/argv (e.g. -- disappears both
   //   from argc and argv)
-  if (!gtk_init_check (&argc, &argv)) {
+  if (! gtk_init_check(&argc, &argv)) {
     g_print("Error, cannot initialize gtk.\n");
     return EXIT_FAILURE;
   }
 
-  menu[0] = gtk_menu_new ();
+  menu[0] = gtk_menu_new();
 
   /* handle et .c oh un keys as arrow-keys down up left right on dvorak
      keyboard layout and jkqgG keys as in less(1)
      see menu class in gtk/gtkmenu.c from GTK upstream */
   guint key;
   GdkModifierType mod;
-  GtkBindingSet *binding_set = gtk_binding_set_by_class (
+  GtkBindingSet *binding_set = gtk_binding_set_by_class(
       GTK_MENU_GET_CLASS (menu[0]));
 
-  gtk_accelerator_parse ("e", &key, &mod);
+  gtk_accelerator_parse("e", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_NEXT);
-  gtk_accelerator_parse ("t", &key, &mod);
+  gtk_accelerator_parse("t", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_NEXT);
-  gtk_accelerator_parse ("j", &key, &mod);
+  gtk_accelerator_parse("j", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_NEXT);
 
   //gtk_accelerator_parse (".", &key, &mod);  // why the hell does this not work?
   gtk_binding_entry_add_signal (binding_set, GDK_KEY_period, 0,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_PREV);
-  gtk_accelerator_parse ("c", &key, &mod);
+  gtk_accelerator_parse("c", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_PREV);
-  gtk_accelerator_parse ("k", &key, &mod);
+  gtk_accelerator_parse("k", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_PREV);
 
-  gtk_accelerator_parse ("o", &key, &mod);
+  gtk_accelerator_parse("o", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_PARENT);
-  gtk_accelerator_parse ("h", &key, &mod);
+  gtk_accelerator_parse("h", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_PARENT);
 
-  gtk_accelerator_parse ("u", &key, &mod);
+  gtk_accelerator_parse("u", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_CHILD);
-  gtk_accelerator_parse ("n", &key, &mod);
+  gtk_accelerator_parse("n", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_CHILD);
-  //gtk_accelerator_parse ("l", &key, &mod);  // why the hell does this not work?
+  //gtk_accelerator_parse("l", &key, &mod);  // why the hell does this not work?
   gtk_binding_entry_add_signal (binding_set, GDK_KEY_l, mod,
       "move-current", 1, GTK_TYPE_MENU_DIRECTION_TYPE, GTK_MENU_DIR_CHILD);
 
-  gtk_accelerator_parse ("g", &key, &mod);
+  gtk_accelerator_parse("g", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-scroll", 1, GTK_TYPE_SCROLL_TYPE, GTK_SCROLL_START);
 
-  gtk_accelerator_parse ("<Shift>g", &key, &mod);
+  gtk_accelerator_parse("<Shift>g", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "move-scroll", 1, GTK_TYPE_SCROLL_TYPE, GTK_SCROLL_END);
 
-  gtk_accelerator_parse ("q", &key, &mod);
+  gtk_accelerator_parse("q", &key, &mod);
   gtk_binding_entry_add_signal (binding_set, key, mod,
       "cancel", 0);
 
-  if (! gtk_icon_size_lookup (GTK_ICON_SIZE_BUTTON, &w, &h)) {
+  if (! gtk_icon_size_lookup(GTK_ICON_SIZE_BUTTON, &w, &h)) {
     w = 30;
     h = 30;
   };
@@ -209,9 +206,10 @@ int main (int argc, char *argv[]) {
   curItem = 0;
   Mode = 0;
   curDepth = 0;
-  while ((Kind = ReadLine()) != 0) {	// Read next line and get the keyword kind
+  // FIXME Read next line and get the keyword kind
+  while ((Kind = ReadLine()) != 0) {
     if (Kind == -1) {
-      Mode = -1;	// Error parsing file
+      Mode = -1;
       fprintf(stderr, "Bad syntax \"%s\"\n", data);
     }
 
@@ -250,6 +248,7 @@ int main (int argc, char *argv[]) {
         strcpy (Item, data);
         Mode = 2;
         break;
+
       case 2:	// Still making new menu item
         if (Kind != 2) {	// Problems if keyword 'cmd=' not found
           g_print ("Missing keyword 'cmd=' (after 'item=').\n");
@@ -259,6 +258,7 @@ int main (int argc, char *argv[]) {
         strcpy (Cmd[curItem], data);
         Mode = 3;
         break;
+
       case 3:	// Still making new menu item
         if (Kind != 3) {	// Problems if keyword 'icon=' not found
           g_print ("Missing keyword 'icon=' (after 'cmd=').\n");
@@ -266,7 +266,8 @@ int main (int argc, char *argv[]) {
           break;
         }
         // Insert item into menu
-        menuItem = gtk_image_menu_item_new_with_mnemonic (Item);
+        // FIXME deprecated, use gtk_menu_item_new_with_mnemonic(Item)
+        menuItem = gtk_image_menu_item_new_with_mnemonic(Item);
         gtk_menu_shell_append (GTK_MENU_SHELL (menu[curDepth]), menuItem);
         g_signal_connect_swapped (menuItem, "activate",
             G_CALLBACK (RunItem), Cmd[curItem]);
@@ -288,16 +289,20 @@ int main (int argc, char *argv[]) {
             error = NULL; \
           } \
           image = gtk_image_new_from_pixbuf(Pixbuf); \
+          /* FIXME GtkImageMenuItem is deprecated - replace it with GMenu from GIO? */ \
           gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(img), image);
+          /*gtk_image_menu_item_set_image(GtkImageMenuItem(img), image);*/
 
         ADD_MENU_ITEM(menuItem)
         break;
+
       case 4:	// Start submenu
         if (curDepth >= MAX_SUBMENU_DEPTH) {
           g_print ("Maximum submenu depth exceeded.\n");
           Mode = -1;
           break;
         }
+        // FIXME deprecated, use gtk_menu_item_new_with_mnemonic(data)
         SubmenuItem = gtk_image_menu_item_new_with_mnemonic (data);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu[curDepth]), SubmenuItem);
         curDepth++;
@@ -306,6 +311,7 @@ int main (int argc, char *argv[]) {
             menu[curDepth]);
         Mode = 5;
         break;
+
       case 5:	// Adding image to new submenu
         if (Kind != 3) {	// Problems if keyword 'icon=' not found
           g_print ("Missing keyword 'icon=' (after 'submenu=').\n");
@@ -314,23 +320,26 @@ int main (int argc, char *argv[]) {
         }
         ADD_MENU_ITEM(SubmenuItem)
         break;
+
       case 6:	// Insert separator into menu
         menuItem = gtk_separator_menu_item_new ();
         gtk_menu_shell_append (GTK_MENU_SHELL (menu[curDepth]), menuItem);
         Mode = 0;
         break;
+
       case 7:	// Change menu icon size
         i = atoi (data);
         if ((i < MIN_ICON_SIZE) || (i > MAX_ICON_SIZE)) {
-          g_print ("Illegal size for menu icon.\n");
+          g_print("Illegal size for menu icon.\n");
           Mode = -1;
           break;
         }
         w = i;
         h = i;
-        g_print ("New icon size = %d.\n", w);
+        g_print("New icon size = %d.\n", w);
         Mode = 0;
         break;
+
       case 8:	// Set menu position
         if (Get2Numbers (data)) {
           bSetMenuPos = TRUE;
@@ -342,31 +351,35 @@ int main (int argc, char *argv[]) {
           Mode = -1;
         }
         break;
+
       default:
         Mode = -1;
-    }	// switch
-
-    if (Mode == -1) {	// Error parsing file
-      // Placed here so that ReadLine is not called again
-      g_print ("%d: >>>>%s\n", lineNum, Line);
-      break;	// Quit reading file
     }
-  }	// while
+
+    if (Mode == -1) {
+      g_print ("%d: >>>>%s\n", lineNum, Line);
+      break;
+    }
+  }
 
   fclose (pFile);
 
-  // keep user informed, the menu is empty
+  // inform user
   if (curItem == 0)
     gtk_menu_shell_append (GTK_MENU_SHELL (menu[0]),
-        gtk_image_menu_item_new_with_mnemonic ("<no content to display>"));
+        //FIXME deprecated, use gtk_menu_item_new_with_mnemonic("...")
+        gtk_image_menu_item_new_with_mnemonic("<no content to display>"));
 
   gtk_widget_show_all (menu[0]);
   g_signal_connect_swapped (menu[0], "deactivate",
-      G_CALLBACK (QuitMenu), NULL);
+      G_CALLBACK(QuitMenu), NULL);
   gtk_menu_shell_select_some (GTK_MENU_SHELL (menu[0]));
 
-  while(!gtk_widget_get_visible(menu[0])) { // Keep trying until startup
-    usleep(50000);						  // button (or key) is released
+  // Keep trying until startup
+  while (! gtk_widget_get_visible(menu[0])) {
+    // button (or key) is getting released
+    usleep(50000);
+
     if (bSetMenuPos)
       gtk_menu_popup (GTK_MENU (menu[0]), NULL, NULL,
           (GtkMenuPositionFunc) menu_position,
@@ -453,13 +466,13 @@ gboolean Get2Numbers (char *data) {
   return TRUE;
 }
 
-static void RunItem (char *Cmd) {
+static void RunItem (char *cmd) {
   GError *error = NULL;
-  //g_print ("Run: %s\n", Cmd);
+  //g_print ("Run: %s\n", cmd);
 
-  if (!Cmd) return;
+  if (! cmd) return;
 
-  if (!g_spawn_command_line_async(Cmd, &error)) {
+  if (! g_spawn_command_line_async(cmd, &error)) {
     g_print ("Error running command.\n");
     g_print ("%s\n", error->message);
     g_error_free (error);
@@ -467,9 +480,8 @@ static void RunItem (char *Cmd) {
   gtk_main_quit ();
 }
 
-static void QuitMenu (char *Msg) {
-  //g_print ("Menu was deactivated.\n");
-  gtk_main_quit ();
+static void QuitMenu(char *msg) {
+  gtk_main_quit();
 }
 
 // return rest of the string after cut off using regexp |^pattern *= *|
@@ -499,9 +511,12 @@ char *str_starts_with_pattern (char *str, char *pattern) {
   }
 }
 
-/* return kind of line, menu depth, and stripped text */
-int ReadLine () {
-  // return(-1) = Error, return(0) = EOF, return(>0) = keyword
+/* return -1 error
+ *         0 EOF
+ *        >0 keyword
+ */
+/* FIXME return kind of line, menu depth, and stripped text */
+int ReadLine() {
   char *chop;
   int i, len, Kind;
   char tmp[MAX_LINE_LENGTH];
@@ -509,20 +524,19 @@ int ReadLine () {
 
   len = 0;
   while (len == 0) {
-    // Read one line.
-    if (fgets (Line, MAX_LINE_LENGTH, pFile) == NULL)
-      return (0);
+    if (fgets(Line, MAX_LINE_LENGTH, pFile) == NULL)
+      return 0;
     strcpy (tmp, Line);
     lineNum++;
 
-    // Remove comments
+    // remove comments
     chop = strchr (tmp, '#');
     if (chop != 0)
       *chop = '\0';
 
     len = strlen (tmp);
 
-    // Remove trailing spaces & CR/LF
+    // remove trailing spaces & CR/LF
     if (len > 0) {
       chop = &tmp[len - 1];
       while ((chop >= tmp) && (isspace(*chop) != 0)) {
@@ -533,14 +547,13 @@ int ReadLine () {
     }
   };
 
-  // Big error?
   if (len >= MAX_LINE_LENGTH) {
-    strncpy (data, tmp, MAX_LINE_LENGTH);
+    strncpy(data, tmp, MAX_LINE_LENGTH);
     data[MAX_LINE_LENGTH - 1] = '\0';
     return (-1);
   }
 
-  // Calculate menu depth
+  // menu depth
   for (depth = 0, i = 0; i < len; i++) {
     if (tmp[i] == '\t')
       depth++;
@@ -548,7 +561,7 @@ int ReadLine () {
       break;
   }
 
-  // Remove leading white space
+  // remove leading white space
   str2 = tmp;
   while ((*str2 == ' ') || (*str2 == '\t')) {
     str2++;
@@ -588,16 +601,21 @@ int ReadLine () {
   return Kind;
 }
 
-int already_running (void) {
+/*
+ * return 0 not_running
+ *        1 already_running
+ *        2 some_error
+ */
+int already_running(void) {
   struct flock fl;
   int fd;
   char *home;
   int n;
   int ret = 2;
-  char *Lock_path;
+  char *lock_path;
 
   /* a buffer to hold the path name to our lock file */
-  if ((Lock_path = malloc(MAX_PATH_LEN + 1)) == NULL) {
+  if ((lock_path = malloc(MAX_PATH_LEN + 1)) == NULL) {
     fprintf(stderr,
         "Error, malloc failed");
     exit(1);
@@ -606,24 +624,24 @@ int already_running (void) {
   /* we need to place the lock file in ENV_LOCK_FILE_PREFIX if it is set,
      else in ~/.cache */
   if ((home = getenv(ENV_LOCK_FILE_PREFIX)) != NULL) {
-    n = snprintf(Lock_path, MAX_PATH_LEN, "%s/%s", home, LOCK_NAME);
+    n = snprintf(lock_path, MAX_PATH_LEN, "%s/%s", home, LOCK_NAME);
   } else if ((home = getenv("HOME")) != NULL) {
     /* try for ~/.cache instead */
-    n = snprintf(Lock_path, MAX_PATH_LEN, "%s/.cache/%s", home, LOCK_NAME);
+    n = snprintf(lock_path, MAX_PATH_LEN, "%s/.cache/%s", home, LOCK_NAME);
   } else {
     fprintf(stderr,
         "Error, could not get env variables " ENV_LOCK_FILE_PREFIX " or HOME\n");
     goto Done;
   }
 
-  if (n > MAX_PATH_LEN || Lock_path == NULL) {
-    fprintf(stderr, "Error, path name too long: %s.\n", Lock_path);
+  if (n > MAX_PATH_LEN || lock_path == NULL) {
+    fprintf(stderr, "Error, path name too long: %s.\n", lock_path);
     goto Done;
   }
 
-  fd = open(Lock_path, O_RDWR | O_CREAT, 0600);
+  fd = open(lock_path, O_RDWR | O_CREAT, 0600);
   if (fd < 0) {
-    fprintf(stderr, "Error opening %s.\n", Lock_path);
+    fprintf(stderr, "Error opening %s.\n", lock_path);
     goto Done;
   }
 
@@ -638,7 +656,7 @@ int already_running (void) {
     ret = 0;
 
 Done:
-  free(Lock_path);
+  free(lock_path);
 
   return ret;
 }

@@ -2,7 +2,7 @@
 
 _basename=mygtkmenui
 pkgname=${_basename}-git
-pkgver=15.6c0a589
+pkgver=22.6c6f7a6
 pkgrel=1
 pkgdesc="myGtkMenu improved; GTK2, GTK3 standalone & lightweight menu written in C"
 arch=('i686' 'x86_64')
